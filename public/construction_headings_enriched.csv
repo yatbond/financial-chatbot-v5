@@ -1,0 +1,113 @@
+Item_Code,Data_Type,Friendly_Name,Category,Tier,Acronyms
+,Project Code,Project Code,Project Info,0,project code|project no|job no|pcode
+,Project Name,Project Name,Project Info,0,project name|project|job name
+,Report Date,Report Date,Project Info,0,report date|report month|as at date
+,Start Date,Start Date,Project Info,0,start date|commencement
+,Complete Date,Completion Date,Project Info,0,complete date|completion date|end date
+,Target Complete Date,Target Completion Date,Project Info,0,target complete date|target date|target completion
+,Time Consumed (%),Time Consumed %,Project Info,0,time consumed|time elapsed|time %
+,Target Completed (%),Target Completion %,Project Info,0,target completed|target %|completion %
+1,Income,Total Income,Income,1,income|revenue|total income|item 1
+1.1,"Income - Original Contract Works",Original Contract Value,Income,2,ocw|original contract|contract value|original works
+1.2,"Income - V.O. / Compensation Events",VO & Compensation Events,Income,2,vo|ce|variation order|compensation events|vo ce
+1.2.1,"Income - V.O. / Compensation Events - -V.O. / C.E.",VO / CE Amount,Income,3,vo amount|ce amount|vo ce amount
+1.2.2,"Income - V.O. / Compensation Events - -Fee of C.E.",CE Fee,Income,3,ce fee|fee of ce|compensation event fee
+1.3,Income - Provisional Sum,Provisional Sum,Income,2,ps|provisional sum|provisional|psum
+1.4,"Income - Adjustment for Provisional Quantities (remeasurement) and PC Rates",Remeasurement & PC Rate Adjustment,Income,2,remeasurement|pc rates|adjustment pq|remeas
+1.5,Income - NSC,NSC,Income,2,nsc|nominated sub contractor income|nsc income
+1.6,"Income - Profit & Attendance",Profit & Attendance,Income,2,p&a|profit attendance|pa|patendance
+1.7,Income - Claims,Claims Income,Income,2,claims|claims income|income claims
+1.8,"Income - Price Fluctuation / CPF",Price Fluctuation (CPF),Income,2,cpf|price fluctuation|price fluctuation income
+1.9,Income - MPF Reimbursement,MPF Reimbursement,Income,2,mpf|mpf reimbursement|mpf repay
+1.10,Income - SA,Special Account Income,Income,2,sa|special account|sa income
+1.11,Income - CSD,CSD Income,Income,2,csd|csd income
+1.12,"Income - Other Revenue / Pain Gain Sharing",Other Revenue & Pain/Gain Share,Income,2,other revenue|pain gain|pgs|pain gain sharing|other rev
+1.12.1,"Income - Other Revenue / Pain Gain Sharing - -Other Revenue",Other Revenue,Income,3,other revenue detail|other rev detail
+1.12.2,"Income - Other Revenue / Pain Gain Sharing - -Pain Gain Sharing",Pain/Gain Share,Income,3,pain gain|pgs|pain gain sharing|pgs income
+1.12.3,"Income - Other Revenue / Pain Gain Sharing - -Stretch Target Income",Stretch Target Bonus,Income,3,stretch target|stretch income|stretch bonus
+1.13,Income - Less :LD,Liquidated Damages,Income,2,ld|liquidated damages|ld income|damages
+1.14,Income - Less :Retention Money,Retention,Income,2,retention|retention income|ret money
+1.15,"Income - Less :Retention Money (NSC)",NSC Retention,Income,2,nsc retention|retention nsc
+1.16,Income - Partialing Income Total,Partialing Income,Income,2,partialing income|partial income
+1.17,Income - Advance Payment,Advance Payment,Income,2,advance payment|advance|adv payment
+2,Less : Cost,Total Cost,Cost,1,cost|total cost|less cost|item 2
+2.1,Less : Cost - Preliminaries,Preliminaries,Cost,2,prelim|preliminary|preliminaries|total prelim|prelims
+2.1.1,"Less : Cost - Preliminaries - -Manpower (Mgt. & Supervision)",Management & Supervision,Cost,3,mgt supervision|management staff|supervision|mgmt staff|mgt & sup
+2.1.2,"Less : Cost - Preliminaries - -Manpower (RE)",Resident Engineer Staff,Cost,3,re|resident engineer|re staff|re manpower
+2.1.3,"Less : Cost - Preliminaries - -Manpower (Labour)",Prelim Labour,Cost,3,prelim labour|prelim labor|labour prelim|preliminary labour
+2.1.4,"Less : Cost - Preliminaries - -Adm. Cost one off item (Insurance, Bond)",Insurance & Bond,Cost,3,insurance|bond|insurance bond|one off|adm cost one off
+2.1.5,"Less : Cost - Preliminaries - -Adm. Cost Others (General site overhead, includes RE)",Site Overhead & RE,Cost,3,site overhead|general overhead|adm others|adm cost others
+2.1.6,"Less : Cost - Preliminaries - -Adm. Cost Financial Cost (TR interest & Bank charge)",Interest & Bank Charges,Cost,3,interest|bank charge|tr interest|financial cost|adm financial
+2.1.7,Less : Cost - Preliminaries - -Adm. Cost Messing,Messing / Canteen,Cost,3,messing|canteen|adm messing
+2.1.8,Less : Cost - Preliminaries - -DSC,DSC,Cost,3,dsc|dsc prelim
+2.1.9,Less : Cost - Preliminaries - -General Material,General Materials,Cost,3,general material|general materials prelim
+2.1.10,Less : Cost - Preliminaries - -Plant,Prelim Plant,Cost,3,prelim plant|plant prelim
+2.1.11,Less : Cost - Preliminaries - -JV Partner Management Fee,JV Management Fee,Cost,3,jv fee|jv management|jv partner fee
+2.1.12,Less : Cost - Preliminaries - -Potential Savings (Preliminaries),Prelim Savings,Cost,3,prelim savings|savings prelim|potential savings prelim
+2.1.13,"Less : Cost - Preliminaries - -Manpower (HO-Consultant)",HO Consultant Staff,Cost,3,ho consultant|consultant staff|ho consultant staff
+2.1.14,Less : Cost - Preliminaries - -Adm. Cost (Levies),Levies,Cost,3,levies|levy|adm levies
+2.2,Less : Cost - Materials,Total Materials,Cost,2,materials|material|material cost|total materials
+2.2.1,Less : Cost - Materials - -Concrete,Concrete,Cost,3,concrete|concrete material
+2.2.2,Less : Cost - Materials - -Reinforcement,Rebar,Cost,3,rebar|reinforcement|rebar material
+"2.2.3","Less : Cost - Materials - -Tile, Granite & Marble",Tile/Granite/Marble,Cost,3,tile|granite|marble|tgm
+2.2.4,"Less : Cost - Materials - -Temporary Work (Structural Steel and Sheet Piles)",Temp Works (Steel & Sheet Piles),Cost,3,temp work|temporary work|structural steel|sheet piles
+2.2.5,Less : Cost - Materials - -Structural Steel Member,Structural Steel,Cost,3,structural steel|steel member|ss member
+2.2.6,Less : Cost - Materials - -Furniture,Furniture,Cost,3,furniture
+2.2.7,Less : Cost - Materials - -Sanitary Fitting,Sanitary Fittings,Cost,3,sanitary|sanitary fitting
+2.2.8,Less : Cost - Materials - -Ironmongery,Ironmongery,Cost,3,ironmongery
+2.2.9,Less : Cost - Materials - -MVAC,MVAC Materials,Cost,3,mvac|mvac material
+2.2.10,Less : Cost - Materials - -Electrical,Electrical Materials,Cost,3,electrical|electrical material
+2.2.11,Less : Cost - Materials - -P&D,P&D Materials,Cost,3,p&d|p and d|pnd material
+2.2.12,Less : Cost - Materials - -FS,FS Materials,Cost,3,fs|fs material
+2.2.13,Less : Cost - Materials - -Others Material Cost,Other Materials,Cost,3,other materials|others material|misc material
+2.2.14,Less : Cost - Materials - -Deposit,Material Deposits,Cost,3,deposit|material deposit
+2.2.15,Less : Cost - Materials - -Potential Savings (Materials),Material Savings,Cost,3,material savings|savings material|potential savings material
+2.2.16,Less : Cost - Materials - -Concrete (for Tunnel),Concrete (Tunnel),Cost,3,concrete tunnel|tunnel concrete
+2.2.17,Less : Cost - Materials - -Reinforcement (for Tunnel),Rebar (Tunnel),Cost,3,rebar tunnel|tunnel rebar|reinforcement tunnel
+2.2.18,Less : Cost - Materials - -P&D Material (for Tunnel),P&D Materials (Tunnel),Cost,3,p&d tunnel|tunnel p&d
+2.3,Less : Cost - Plant & Machinery,Total Plant & Machinery,Cost,2,plant|machinery|plant machinery|all plant|total plant|p&m
+"2.3.1","Less : Cost - Plant & Machinery - -Plant, Equipments & Tools (internal hire)",Internal Plant Hire,Cost,3,internal hire|internal plant|plant internal
+"2.3.2","Less : Cost - Plant & Machinery - -Plant, Equipments & Tools (external hire)",External Plant Hire,Cost,3,external hire|external plant|plant external
+2.3.3,Less : Cost - Plant & Machinery - -Diesel & Lubricant,Fuel & Lubricant,Cost,3,diesel|lubricant|fuel|diesel lubricant
+2.3.4,Less : Cost - Plant & Machinery - -Repairing,Plant Repairs,Cost,3,repair|plant repair|repairing
+2.3.5,Less : Cost - Plant & Machinery - -Resale,Plant Resale,Cost,3,resale|plant resale
+2.3.6,Less : Cost - Plant & Machinery - -Others Plant & Machinery,Other Plant Costs,Cost,3,other plant|others plant
+2.3.7,Less : Cost - Plant & Machinery - -Depreciation (in Ledger),Plant Depreciation,Cost,3,depreciation|plant depreciation
+2.3.8,Less : Cost - Plant & Machinery - -Potential Savings (Plants),Plant Savings,Cost,3,plant savings|savings plant|potential savings plant
+"2.3.9","Less : Cost - Plant & Machinery - - Plant, Equipments & Tools (purchased)",Plant Purchased,Cost,3,plant purchased|purchased plant
+2.4,Less : Cost - Subcontractor,Total Subcontractor,Cost,2,subcon|sub|subbie|subcontractor|subcontractors|total subcon
+2.4.1,Less : Cost - Subcontractor - -Contract Works,Subcontractor Contract Works,Cost,3,contract works|cw|subcon cw|subbie cw|subcon contract works
+2.4.2,Less : Cost - Subcontractor - -Variation,Subcontractor Variations,Cost,3,variation|vo|subcon vo|subbie vo|subbie variation|subcon variation|variations
+2.4.3,Less : Cost - Subcontractor - -Claim,Subcontractor Claims,Cost,3,claim|claims|subcon claim|subbie claim|subbie claims|subcon claims
+2.4.4,Less : Cost - Subcontractor - -Contra Charge,Contra Charges,Cost,3,contra|contra charge|cc
+2.4.5,Less : Cost - Subcontractor - -Down Payment,Subcontractor Down Payment,Cost,3,down payment|dp|subcon dp
+2.4.6,Less : Cost - Subcontractor - -Retention,Subcontractor Retention,Cost,3,retention|subcon retention|ret subcon|retention subbie
+2.4.7,Less : Cost - Subcontractor - -Potential Savings (DSC),DSC Savings,Cost,3,dsc savings|savings dsc
+2.4.8,Less : Cost - Subcontractor - -Commercial Settlement,Commercial Settlement,Cost,3,commercial settlement|settlement|comm settlement
+2.4.9,"Less : Cost - Subcontractor - -Contract Works (for Tunnel)",Subcontractor Works (Tunnel),Cost,3,tunnel cw|tunnel contract works|cw tunnel
+2.5,Less : Cost - Manpower (Labour) for Works,Direct Labour,Cost,2,labour|labor|direct labour|manpower labour|mp labour
+2.6,Less : Cost - Nominated Package,Total Nominated Package,Cost,2,nominated package|nom package|np
+2.6.1,Less : Cost - Nominated Package - -Nominated Subcontractor,Nominated Subcontractor,Cost,3,nominated subcon|nom subcon|nsc package
+2.6.2,Less : Cost - Nominated Package - -Nominated Supplier,Nominated Supplier,Cost,3,nominated supplier|nom supplier
+2.7,Less : Cost - Allow for Contingencies,Contingency Reserve,Cost,2,contingency|contingency reserve
+2.8,Less : Cost - Allow for Defects Rectification Works,Defects Rectification,Cost,2,defects|rectification|defects rect
+2.9,Less : Cost - Tender Fee,Tender Fee,Cost,2,tender fee
+2.10,Less : Cost - Partialing Cost Total,Partialing Cost,Cost,2,partialing cost|partial cost
+2.11,Less : Cost - Incentive / POR Bonus,Incentive & POR Bonus,Cost,2,incentive|por bonus|bonus|incentive bonus
+2.11.1,Less : Cost - Incentive / POR Bonus - -Cost saving related bonus,Cost Saving Bonus,Cost,3,cost saving bonus|saving bonus
+2.11.2,Less : Cost - Incentive / POR Bonus - -Non-cost saving related bonus,Other Bonus,Cost,3,other bonus|non cost bonus
+2.11.3,Less : Cost - Incentive / POR Bonus - -Cost saving achieved,Cost Savings Achieved,Cost,3,cost saving achieved|savings achieved
+2.12,Less : Cost - CPR Penalty,CPR Penalty,Cost,2,cpr|cpr penalty|penalty
+2.13,Less : Cost - HO - Transformation Performance Fee,HO Transformation Fee,Cost,2,transformation fee|ho transformation
+2.14,Less : Cost - Stretch Target (Cost),Stretch Target Cost,Cost,2,stretch target cost|stretch cost
+3,"Gross Profit (Item 1.0-2.0) (Financial A/C)",Gross Profit,Summary,1,gp|gross profit|profit|item 3
+4,Reconciliation,Total Reconciliation,Reconciliation,1,reconciliation|recon|total recon
+4.1,"Reconciliation - Less/(Add) : Internal Interest (5% for +) & (5% for -)",Internal Interest Adjustment,Reconciliation,2,internal interest|interest adjustment|interest recon
+4.3,Reconciliation - Total Adjustment,Total Adjustments (Recon),Reconciliation,2,total adjustment|recon adjustment
+5,Gross Profit (Item 3.0-4.3),Gross Profit (after recon & overhead),Summary,1,gp after recon|net gp|gp after overhead|item 5
+6,Overhead,Total Overhead,Overhead,1,overhead|oh|total overhead
+6.1,Overhead - HO Overhead Rate %,HO Overhead Rate,Overhead,2,ho overhead rate|overhead rate|oh rate
+6.1.1,"Overhead - HO Overhead Rate % - HO Overhead (6.0000% of Total Income excl. PC & Provisional Sum)",HO Overhead (6%),Overhead,3,ho overhead 6%|ho oh|head office overhead
+6.1.2,"Overhead - HO Overhead Rate % - BU Overhead (1.0000% of Total Income excl. PC & Provisional Sum)",BU Overhead,Overhead,3,bu overhead|bu oh|business unit overhead
+6.2,"Overhead - Acc. Profit/(Loss) ~ B/F",Brought Forward Profit/Loss,Overhead,2,bf profit|brought forward|acc profit bf
+7,Acc. Net Profit/(Loss),Accumulated Net Profit/Loss,Summary,1,np|net profit|net loss|item 7

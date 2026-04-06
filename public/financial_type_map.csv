@@ -1,0 +1,24 @@
+Raw_Financial_Type,Clean_Financial_Type,Acronyms
+Budget Tender,Budget Tender,tender|budget tender|bt
+1st Working Budget,1st Working Budget,1st working|first working|working budget|1wb
+Business Plan,Business Plan,bp|budget|business plan
+"Audit Report (WIP)",WIP,wip|audit|audit report
+"Projection as at",Projection,projected|projection
+"Committed Value / Cost as at",Committed Cost,committed|committed cost|committed value
+"Accrual 
+(Before Retention) as at",Accrual,accrual|accrued
+"Cash Flow Actual received & paid as at",Cash Flow,cf|cashflow|cash flow|cash
+"Adjustment Cost/ variation",Adjustment,adjustment|variation adjustment
+"Adjustment Cost / Variation k=I-J",Adjustment (I-J),adjustment ij|variation ij
+E1=E/D,E1 Ratio,e1|e1 ratio|efficiency ratio
+Balance,Balance,balance
+G1=G/E,G1 Ratio,g1|g1 ratio
+"Balance to",Balance To,balance to|outstanding balance
+General,General,general|project info
+"Reconciliation - Less/(Add) : Internal Interest (5% for +) & (5% for -)",Internal Interest Adjustment,internal interest|interest recon
+"Reconciliation - Plant & Machinery - Depreciation (in Ledger)",Plant Depreciation (Recon),plant depreciation recon
+"Reconciliation - Preliminaries - -Adm Reconciliation (TR interest & Bank charge)",Admin Interest (Recon),admin interest recon
+"Reconciliation - Total Adjustment",Total Adjustments (Recon),total adjustment recon
+"Revision as at",Budget Revision,revision|rev|budget revision|rev as at
+"Overhead - HO Overhead Rate %",HO Overhead Rate,ho overhead rate|oh rate
+"Overhead - Acc. Profit/(Loss) ~ B/F",Brought Forward P/L,bf profit|brought forward
