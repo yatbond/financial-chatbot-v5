@@ -2676,7 +2676,7 @@ function handleComparisonQuery(data: FinancialRow[], project: string, question: 
   }
 
   // Still provide candidates for drill-down
-  const candidates = allRows.slice(0, 10).map((d, i) => ({
+  const candidates = allRows.slice(0, 5).map((d, i) => ({
     id: i + 1,
     value: d.Value,
     score: 100,
@@ -4170,7 +4170,7 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
   } // End of if (!targetItemCode)
 
   // Create candidates for clickable selection
-  // ALWAYS score ALL project data records and show top 10 best matches
+  // ALWAYS score ALL project data records and show top 5 best matches
   // Include keyword matching across ALL fields for comprehensive scoring
   
   // Filter out stopwords from question words for scoring (but keep for display)
@@ -4260,7 +4260,7 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
       year: d.Year,
       matchedKeywords: Array.from(new Set(matchedKeywords)) // Remove duplicates
     }
-  }).sort((a, b) => b.score - a.score).slice(0, 10)
+  }).sort((a, b) => b.score - a.score).slice(0, 5)
 
   // Reassign IDs after sorting
   const candidates = allCandidates.map((c, i) => ({ ...c, id: i + 1 }))
