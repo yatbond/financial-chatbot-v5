@@ -585,7 +585,9 @@ async function loadProjectData(filename: string, year: string, month: string): P
 
 // Calculate project metrics
 function getProjectMetrics(data: FinancialRow[], project: string) {
-  const projectData = data.filter(d => d._project === project)
+  // Data is already filtered by project (single CSV file per project)
+  // Just use the full dataset
+  const projectData = data
   if (projectData.length === 0) {
     return {
       'Business Plan GP': 0,
