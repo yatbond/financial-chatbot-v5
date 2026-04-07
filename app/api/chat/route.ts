@@ -434,14 +434,18 @@ async function getFolderStructure(): Promise<{ folders: FolderStructure; project
       return { folders, projects, error: 'Folder "Ai Chatbot Knowledge Base" not found' }
     }
 
+    console.log('[DEBUG] Root folder:', rootFolder)
     const yearFolders = await listYearFolders(drive, rootFolder.id!)
+    console.log('[DEBUG] Year folders:', yearFolders.map((f: any) => f.name))
 
     for (const yearFolder of yearFolders) {
       const year = yearFolder.name!
       const monthFolders = await listMonthFolders(drive, yearFolder.id!)
+      console.log(`[DEBUG] Year ${year} months:`, monthFolders.map((f: any) => f.name))
 
       for (const monthFolder of monthFolders) {
         const csvFiles = await listCsvFiles(drive, monthFolder.id!)
+        console.log(`[DEBUG] ${year}/${monthFolder.name} CSVs:`, csvFiles.length, csvFiles.map((f: any) => f.name).slice(0, 3))
 
         if (csvFiles.length > 0) {
           if (!folders[year]) folders[year] = []
