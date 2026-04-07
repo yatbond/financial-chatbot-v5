@@ -137,7 +137,7 @@ function CandidateMessage({ content, candidates, onSelect }: {
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "👋 Welcome to Financial Chatbot v5!\n\n**Commands:** analyze, compare, trend, total, list, detail, risk, cashflow, type, shortcuts\n\n**Examples:**\n• 'analyze' — Run financial analysis\n• 'compare projection vs wip' — Compare two types\n• 'trend gp 8' — GP over 8 months\n• 'risk' — Risk items across WIP/Committed/CF\n• 'list' — Show all data items\n• 'total preliminaries projection'\n\nType 'shortcuts' for full help." }
+    { role: 'assistant', content: "👋 Welcome to Financial Chatbot v5!\n\n**Commands:**\n• `analyze` — Run financial analysis (6 comparisons)\n• `detail X` — Drill down into Analyze results\n• `compare X vs Y` — Compare two Financial Types\n• `total [item] [type]` — Sum all sub-items\n• `list` — Show all data items\n• `risk` — Risk items across WIP/Committed/CF\n\n**Financial Types:**\n• `bp`, `budget`, `business plan` → Business Plan\n• `projection`, `projected` → Projection as at\n• `wip`, `audit` → Audit Report (WIP)\n• `committed` → Committed Value / Cost as at\n• `cf`, `cashflow`, `cash flow` → Cash Flow (separate sheet)\n• `revision`, `rev` → Revision as at\n\n**Data Types:**\n• `gp` → Gross Profit\n• `np`, `net profit` → Net Profit\n• `prelim`, `preliminaries` → Preliminaries (2.1)\n• `materials` → Materials (2.2)\n• `plant` → Plant & Machinery (2.3)\n• `subcon` → Subcontractor (2.4)\n\nType `shortcuts` for full help." }
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(true)
