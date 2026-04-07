@@ -4040,8 +4040,10 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
     appliedSheet = targetSheet
   }
 
-  // Apply month filter (if specified)
-  if (parsedDate.month) {
+  // Apply month filter (if specified) - BUT NOT for Financial Status
+  // Financial Status is cumulative/report-level data, not monthly
+  // Only apply month filter for sheet-specific queries (Cash Flow, Projection, etc.)
+  if (parsedDate.month && targetSheet !== 'Financial Status') {
     filtered = filtered.filter(d => d.Month === parsedDate.month)
   }
 
@@ -4095,7 +4097,8 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
     
     let suggestions = `No data found matching your query.\n\nFilters attempted:`
     if (appliedSheet) suggestions += `\n- Sheet: ${appliedSheet}`
-    if (parsedDate.month) suggestions += `\n- Month: ${parsedDate.month}`
+    // Don't show month filter for Financial Status (it's not applicable)
+    if (parsedDate.month && targetSheet !== 'Financial Status') suggestions += `\n- Month: ${parsedDate.month}`
     if (parsedDate.year) suggestions += `\n- Year: ${parsedDate.year}`
     if (targetFinType) suggestions += `\n- Financial Type: ${targetFinType}`
     if (targetDataType) suggestions += `\n- Data Type: ${targetDataType}`
