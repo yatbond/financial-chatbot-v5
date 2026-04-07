@@ -410,7 +410,7 @@ async function listCsvFiles(drive: any, monthId: string) {
 
 // Extract project code and name from filename
 function extractProjectInfo(filename: string): { code: string | null; name: string } {
-  const name = filename.replace('_flat.csv', '')
+  const name = filename.replace('_flat_v5.csv', '').replace('_flat.csv', '')
   const match = name.match(/^(\d+)/)
   if (match) {
     const code = match[1]
@@ -454,13 +454,19 @@ async function getFolderStructure(): Promise<{ folders: FolderStructure; project
           for (const file of csvFiles) {
             const { code, name } = extractProjectInfo(file.name!)
             if (code) {
-              projects[file.name!] = {
-                code,
-                name,
-                year,
-                month: monthFolder.name!,
-                filename: file.name!,
-                fileId: file.id!
+              const key = `${year}-${monthFolder.name}-${code}`
+              const existing = projects[key]
+              const isV5 = file.name!.includes('_flat_v5.csv')
+              // Prefer _flat_v5.csv over _flat.csv; otherwise keep existing
+              if (!existing || isV5) {
+                projects[key] = {
+                  code,
+                  name,
+                  year,
+                  month: monthFolder.name!,
+                  filename: file.name!,
+                  fileId: file.id!
+                }
               }
             }
           }
