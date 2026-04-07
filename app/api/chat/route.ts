@@ -551,7 +551,9 @@ async function loadProjectData(filename: string, year: string, month: string): P
 
       // For Project Info (Financial_Type = "General"), keep values as strings (dates, percentages)
       // For financial data, parse as numbers
-      const rawValue = values[values.length - 1] || ''
+      // Value is always at column index 7 in the v5 CSV format:
+      // Year,Month,Sheet_Name,Financial_Type,Item_Code,Friendly_Name,Category,Value,Match_Status,_source_file,_source_subfolder
+      const rawValue = values[7] || ''
       let value: number | string
 
       if (financialType === 'General') {
