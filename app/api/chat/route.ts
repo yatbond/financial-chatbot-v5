@@ -3884,7 +3884,8 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
 
   // Step 0c: Check if this is a Cash Flow query (shortcut for cash flow trend)
   if (lowerQ === 'cash flow' || lowerQ === 'cashflow') {
-    return handleTrendQuery(data, project, 'cash flow gp 12', defaultMonth)
+    const result = handleTrendQuery(data, project, 'cash flow gp 12', defaultMonth)
+    return result || { text: 'No cash flow data found.', candidates: [] }
   }
 
   // Step 0d: Check if this is a Risk query
