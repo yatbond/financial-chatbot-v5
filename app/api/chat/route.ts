@@ -654,7 +654,7 @@ async function loadProjectData(filename: string, year: string, month: string): P
         Item_Code: itemCode,
         Value: value,
         _project: projectLabel,
-        _rowIndex: i + 2,  // +2 because row 0 is header, row 1 is first data row
+        _rowIndex: i + 1,  // i is 0-indexed; header at i=0 is skipped; data starts at i=1 → CSV line 2 = i+1
       }
       data.push(row)
     }
