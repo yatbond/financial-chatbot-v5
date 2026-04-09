@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
-import { loadHeadings, loadFinancialTypes } from '../../lib/csv-loader'
+import { loadHeadings, loadFinancialTypes } from '../../../lib/csv-loader'
 
 /**
  * ============================================================
