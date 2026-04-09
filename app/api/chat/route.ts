@@ -272,7 +272,6 @@ const ACRONYM_MAP: Record<string, string> = {
   'profit': 'gross profit',
   'loss': 'net loss',
   'actual': 'actual cost',
-  'accrued': 'accrual',
   'ytd': 'year to date',
   'mtd': 'month to date',
 }
