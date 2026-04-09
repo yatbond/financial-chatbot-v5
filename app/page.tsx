@@ -137,7 +137,7 @@ function CandidateMessage({ content, candidates, onSelect }: {
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "👋 Welcome to Financial Chatbot v5!\n\n**Commands:**\n• `analyze` — Run financial analysis (6 comparisons)\n• `detail X` — Drill down into results\n• `compare X vs Y` — Compare two Financial Types\n• `total [item] [type]` — Sum all sub-items\n• `list` — Show all data items\n• `trend [metric] [months]` — Show trends over time\n• `risk` — Risk items across WIP/Committed/CF\n• `cash flow` — Last 12 months GP summary\n• `type` — List all Financial Types\n• `shortcuts` — Full help with all shortcuts\n\n**Financial Types:**\n• `bp` → Business Plan\n• `budget`/`bt` → Latest Budget\n• `1wb` → 1st Working Budget\n• `tender` → Budget Tender\n• `projection`/`projected` → Projection\n• `wip`/`audit` → WIP\n• `committed` → Committed Cost\n• `revision`/`rev` → Latest Budget (same)\n• `cf`/`cashflow` → Cash Flow\n• `accrual` → Accrual\n\n**Data Types:**\n• `gp` → Gross Profit\n• `np` → Net Profit\n• `prelim` → Preliminaries\n• `materials` → Materials\n• `plant` → Plant & Machinery\n• `subcon` → Subcontractor\n\nType `shortcuts` for full help." }
+    { role: 'assistant', content: "👋 Welcome to Financial Chatbot v5!\n\nFor guidance, please refer to the **Guide Menu** above.\n\nQuick start:\n• `analyze` — Run financial analysis\n• `shortcuts` — See all commands & shortcuts" }
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -466,8 +466,7 @@ export default function Home() {
                     <h4 className="text-slate-300 font-semibold mb-2">Financial Type Shortcuts</h4>
                     {[
                       { shortcuts: 'bp', full: 'Business Plan' },
-                      { shortcuts: 'budget, bt', full: 'Latest Budget' },
-                      { shortcuts: 'revision, rev', full: 'Latest Budget (same as budget/bt)' },
+                      { shortcuts: 'budget, bt, revision, rev', full: 'Latest Budget' },
                       { shortcuts: '1wb', full: '1st Working Budget' },
                       { shortcuts: 'tender', full: 'Budget Tender' },
                       { shortcuts: 'projection, projected', full: 'Projection' },

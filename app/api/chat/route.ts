@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
+import { loadHeadings, loadFinancialTypes } from '../../lib/csv-loader'
 
 /**
  * ============================================================
@@ -3164,6 +3165,52 @@ function handleTotalQuery(data: FinancialRow[], project: string, question: strin
 }
 
 // ============================================
+// Risk Query Handler
+// ============================================
+function handleRiskQuery(data: FinancialRow[], project: string, defaultMonth: string): FuzzyResult {
+  const projectData = data.filter(d => d._project === project)
+  
+  // Find WIP, Committed, and Cash Flow data
+  const wipRows = projectData.filter(r => r.Financial_Type?.toLowerCase().includes('wip'))
+  const committedRows = projectData.filter(r => r.Financial_Type?.toLowerCase().includes('committed'))
+  const cfRows = projectData.filter(r => r.Financial_Type?.toLowerCase().includes('cash flow'))
+  
+  let lines = '⚠️ **Risk Analysis**\n\n'
+  
+  // Check for cost overruns (WIP vs Budget)
+  const wipTotal = wipRows.reduce((sum, r) => sum + toNumber(r.Value), 0)
+  const bpRows = projectData.filter(r => r.Financial_Type?.toLowerCase().includes('business plan') || r.Financial_Type?.toLowerCase().includes('latest budget'))
+  const bpTotal = bpRows.reduce((sum, r) => sum + toNumber(r.Value), 0)
+  
+  if (wipTotal > bpTotal && bpTotal > 0) {
+    const overrun = wipTotal - bpTotal
+    const pct = ((overrun / bpTotal) * 100).toFixed(1)
+    lines += `🔴 **Cost Overrun:** WIP exceeds Budget by $${(overrun/1000).toFixed(1)}M (${pct}%)\n`
+  }
+  
+  // Check Committed vs Projection
+  const committedTotal = committedRows.reduce((sum, r) => sum + toNumber(r.Value), 0)
+  const projRows = projectData.filter(r => r.Financial_Type?.toLowerCase().includes('projection'))
+  const projTotal = projRows.reduce((sum, r) => sum + toNumber(r.Value), 0)
+  
+  if (committedTotal > projTotal && projTotal > 0) {
+    const overrun = committedTotal - projTotal
+    const pct = ((overrun / projTotal) * 100).toFixed(1)
+    lines += `🔴 **Commitment Risk:** Committed exceeds Projection by $${(overrun/1000).toFixed(1)}M (${pct}%)\n`
+  }
+  
+  // Check Cash Flow position
+  if (cfRows.length > 0) {
+    const cfTotal = cfRows.reduce((sum, r) => sum + toNumber(r.Value), 0)
+    lines += `💰 **Cash Flow:** $${(cfTotal/1000).toFixed(1)}M${cfTotal < 0 ? ' (NEGATIVE!)' : ''}\n`
+  }
+  
+  lines += '\n_Type **detail** to drill down into any risk item_'
+  
+  return { text: lines, candidates: [] }
+}
+
+// ============================================
 // Analyze & Detail Query Handlers
 // ============================================
 
@@ -3794,7 +3841,59 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
   const listResult = handleListQuery(data, project, question)
   if (listResult) return listResult
 
-  // Step 0a: Check if this is "more" after a list query
+  // Step 0a: Check if this is a Shortcuts/Help query
+  const lowerQ = question.toLowerCase().trim()
+  if (lowerQ === 'shortcuts' || lowerQ === 'help' || lowerQ === 'commands') {
+    return {
+      text: `📋 **Quick Reference**\n\n**10 Commands:**\n• **analyze** — Run financial analysis (6 comparisons)\n• **compare X vs Y** — Compare two Financial Types\n• **trend [metric] [N]** — Show values over N months\n• **list** — Show data items (list, list more, list 2.2)\n• **total [item] [type]** — Sum sub-items under a parent\n• **detail X** — Drill down into results (after any query)\n• **risk** — Risk items across WIP/Committed/CF\n• **cash flow** — Last 12 months GP summary\n• **type** — List all Financial Types & Sheets\n• **shortcuts** — This help\n\n**Financial Types:** bp, budget/bt/revision/rev, 1wb, tender, projection, wip, committed, cf/cashflow, accrual\n\n**Data Types:** gp, np, prelim, materials, plant, subcon, labour, rebar, income, cost, overhead\n\n💡 For full details, see the **Guide Menu** above!`,
+      candidates: []
+    }
+  }
+
+  // Step 0b: Check if this is a Type query
+  if (lowerQ === 'type' || lowerQ === 'types' || lowerQ === 'financial types') {
+    // Import from shortcuts.ts
+    const types = loadFinancialTypes()
+    const headings = loadHeadings()
+    
+    let lines = '📋 **Financial Types**\n\n'
+    
+    for (const t of types) {
+      const acronyms = t.Acronyms.split('|').map(a => a.trim()).join(', ')
+      lines += '• **' + t.Clean_Financial_Type + '** _(' + acronyms + ')_\n'
+    }
+    
+    // Show unique categories
+    const categories: string[] = []
+    for (const h of headings) {
+      if (h.Category !== 'Project Info' && !categories.includes(h.Category)) {
+        categories.push(h.Category)
+      }
+    }
+    
+    lines += '\n**Categories:**\n'
+    for (const cat of categories) {
+      const count = headings.filter(h => h.Category === cat).length
+      lines += '• **' + cat + '** (' + count + ' items)\n'
+    }
+    
+    lines += '\n_Type "list" to see all data items by tier_'
+    
+    return { text: lines, candidates: [] }
+  }
+
+  // Step 0c: Check if this is a Cash Flow query (shortcut for cash flow trend)
+  if (lowerQ === 'cash flow' || lowerQ === 'cashflow') {
+    return handleTrendQuery(data, project, 'cash flow gp 12', defaultMonth)
+  }
+
+  // Step 0d: Check if this is a Risk query
+  if (lowerQ === 'risk' || lowerQ === 'risks') {
+    // Handle risk query - show risk items
+    return handleRiskQuery(data, project, defaultMonth)
+  }
+
+  // Step 0e: Check if this is "more" after a list query
   const listMoreResult = handleListMore(data, project, question)
   if (listMoreResult) return listMoreResult
 
@@ -3807,7 +3906,6 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
   // Priority: Trend context → Compare context → Analyze context
   // This ensures "detail N" after a Trend drills into Trend sub-items,
   // not the Analyze handler which would return "No analysis results found"
-  const lowerQ = question.toLowerCase().trim()
   const isDetailOrMore = lowerQ === 'detail' || lowerQ === 'more' || /^detail\s+\d+(\.\d+)?$/i.test(lowerQ)
 
   if (isDetailOrMore) {
