@@ -19,7 +19,7 @@ import { google } from 'googleapis'
  *      #3: Projection vs Business Plan — Cost Overruns
  *      #4: Projection vs WIP — Cost Overruns
  *      #5: Committed vs Projection — Committed Exceeds Projection
- *      #6: Projection vs Revision — Exceeds Budget Revision
+ *      #6: Projection vs Latest Budget — Exceeds Latest Budget
  *    - Results are cached (30 min TTL) for Detail drill-down
  *    - Example: "Analyze"
  *
@@ -70,15 +70,16 @@ import { google } from 'googleapis'
  *
  * ============================================================
  * FINANCIAL TYPE SHORTCUTS (resolved by expandAcronyms + resolveFinancialType):
- *   bp, budget, business plan           → "Business Plan"
- *   projection, projected               → "Projection as at"
- *   wip, audit, audit report            → "Audit Report (WIP)"
- *   committed, committed value/cost     → "Committed Value / Cost as at"
- *   revision, rev, budget revision      → "Revision as at"
+ *   bp, business plan                   → "Business Plan"
+ *   budget, bt                          → "Latest Budget" (UPDATED)
+ *   1st working, first working, 1wb     → "1st Working Budget"
  *   tender, budget tender               → "Budget Tender"
- *   cf, cashflow, cash flow             → "Cash Flow Actual received & paid as at"
+ *   projection, projected               → "Projection"
+ *   wip, audit, audit report            → "WIP"
+ *   committed, committed cost/value     → "Committed Cost"
  *   accrual, accrued                    → "Accrual"
- *   1st working budget, first working   → "1st Working Budget"
+ *   revision, rev, rev as at            → "Latest Budget" (same as budget/bt)
+ *   cf, cashflow, cash flow, cash       → "Cash Flow"
  *
  * DATA TYPE / ITEM SHORTCUTS (ACRONYM_MAP below):
  *   gp                → Gross Profit (Item 3)
@@ -110,19 +111,36 @@ const ACRONYM_MAP: Record<string, string> = {
   'np': 'net profit',
   'net profit': 'net profit',
 
-  // === Financial Type shortcuts ===
+  // === Financial Type shortcuts (UPDATED per financial_type_map.csv v2) ===
+  // NOTE: "budget" / "bt" now maps to "latest budget" (was "business plan")
   'bp': 'business plan',
-  'budget': 'business plan',
-  'revision': 'revision as at',
-  'rev': 'revision as at',
+  'business plan': 'business plan',
+  'budget': 'latest budget',  // Changed: now maps to Latest Budget
+  'bt': 'latest budget',      // Changed: now maps to Latest Budget
+  'latest budget': 'latest budget',
+  '1st working': '1st working budget',
+  'first working': '1st working budget',
+  '1wb': '1st working budget',
+  'revision': 'latest budget',
+  'rev': 'latest budget',
+  'budget revision': 'latest budget',
+  'rev as at': 'latest budget',
+  'latest budget': 'latest budget',
   'tender': 'budget tender',
-  'committed': 'committed value',
+  'budget tender': 'budget tender',
+  'committed': 'committed cost',
+  'committed cost': 'committed cost',
+  'committed value': 'committed cost',
   'accrual': 'accrual',
-  'wip': 'audit report (wip)',
-  'projection': 'projection as at',
-  'projected': 'projection as at',
+  'accrued': 'accrual',
+  'wip': 'wip',
+  'audit': 'wip',
+  'audit report': 'wip',
+  'projection': 'projection',
+  'projected': 'projection',
   'cf': 'cash flow',
   'cashflow': 'cash flow',
+  'cash flow': 'cash flow',
   'cash': 'cash flow',
 
   // === Item / category shortcuts (Item_Code 2.1 - Preliminaries) ===
@@ -180,14 +198,79 @@ const ACRONYM_MAP: Record<string, string> = {
   'subcon claims': 'claim',
   'subcontractors claims': 'claim',
 
-  // === Other shortcuts ===
-  'rebar': 'reinforcement',
+  // === Item shortcuts from construction_headings_enriched.csv ===
+  // Income items
+  'revenue': 'total income',
+  'income': 'total income',
+  'total income': 'total income',
+  'ocw': 'original contract value',
+  'original contract': 'original contract value',
+  'contract value': 'original contract value',
+  'ps': 'provisional sum',
+  'provisional sum': 'provisional sum',
+  'provisional': 'provisional sum',
+  'cpf': 'price fluctuation',
+  'price fluctuation': 'price fluctuation',
+  'mpf': 'mpf reimbursement',
+  'nsc': 'nsc',
+  'sa': 'special account income',
+  'csd': 'csd income',
+  'ld': 'liquidated damages',
+  'liquidated damages': 'liquidated damages',
+  'damages': 'liquidated damages',
+  'advance': 'advance payment',
+  'advance payment': 'advance payment',
+
+  // Cost sub-items
+  'rebar': 'rebar',
+  'reinforcement': 'rebar',
+  'concrete': 'concrete',
+  'tile': 'tile granite marble',
+  'granite': 'tile granite marble',
+  'marble': 'tile granite marble',
+  'diesel': 'fuel lubricant',
+  'fuel': 'fuel lubricant',
+  'depreciation': 'plant depreciation',
+  'contra': 'contra charges',
+  'contra charge': 'contra charges',
+  'cc': 'contra charges',
+  'contingency': 'contingency reserve',
+  'defects': 'defects rectification',
+  'rectification': 'defects rectification',
+  'tender fee': 'tender fee',
+  'incentive': 'incentive por bonus',
+  'por bonus': 'incentive por bonus',
+  'cpr': 'cpr penalty',
+  'stretch': 'stretch target cost',
+
+  // Prelim sub-items
+  'supervision': 'management supervision',
+  'staff': 'management supervision',
+  'mgt supervision': 'management supervision',
+  're': 'resident engineer staff',
+  'resident engineer': 'resident engineer staff',
+  'insurance': 'insurance bond',
+  'bond': 'insurance bond',
+  'site overhead': 'site overhead re',
+  'interest': 'interest bank charges',
+  'bank charge': 'interest bank charges',
+  'messing': 'messing canteen',
+  'canteen': 'messing canteen',
+  'dsc': 'dsc',
+  'levies': 'levies',
+  'levy': 'levies',
+
+  // Overhead/Recon
+  'overhead': 'total overhead',
+  'oh': 'total overhead',
+  'recon': 'total reconciliation',
+  'reconciliation': 'total reconciliation',
+
+  // === Other synonyms ===
   'staff': 'supervision',
   'labour': 'manpower (labour)',
   'labor': 'manpower (labour)',
   'lab': 'labour',
-
-  // === Other synonyms ===
   'profit': 'gross profit',
   'loss': 'net loss',
   'actual': 'actual cost',
@@ -270,18 +353,17 @@ let lastCompareDetailPage: number = 0  // Track pagination for "more" command
 // Primary keywords for Financial Type matching (10x weight)
 // These are the KEY differentiators between Financial Types
 // Maps canonical Financial_Type names to their user-facing keyword variants
-// IMPORTANT: "budget" / "bp" → "business plan" (NOT "1st working budget")
+// UPDATED per financial_type_map.csv v2 (Latest Budget, 1st Working Budget, etc.)
 const FINANCIAL_TYPE_KEYWORDS: Record<string, string[]> = {
   'cash flow': ['cash flow', 'cashflow', 'cf'],
   'committed cost': ['committed', 'committed cost', 'committed value'],
   'projection': ['projection', 'projected'],
   'accrual': ['accrual', 'accrued'],
-  'business plan': ['business plan', 'budget', 'bp'],
-  'tender': ['tender', 'budget tender'],
-  'actual': ['actual', 'actual cost'],
-  'audit report': ['wip', 'audit', 'audit report'],
-  '1st working budget': ['1st working budget', 'first working budget', 'first working', 'working budget'],
-  'revision as at': ['revision', 'rev', 'budget revision', 'revision as at'],
+  'business plan': ['business plan', 'bp'],
+  'latest budget': ['latest budget', 'budget', 'bt', 'revision', 'rev', 'rev as at', 'budget revision'],
+  '1st working budget': ['1st working budget', '1st working', 'first working', '1wb'],
+  'budget tender': ['budget tender', 'tender'],
+  'wip': ['wip', 'audit', 'audit report'],
 }
 
 // Check if a word is a primary Financial Type keyword
@@ -3376,8 +3458,8 @@ function handleAnalyzeQuery(data: FinancialRow[], project: string): FuzzyResult 
   const businessPlanType = resolveFinancialType(data, project, 'business plan')
   const wipType = resolveFinancialType(data, project, 'wip')
   const committedType = resolveFinancialType(data, project, 'committed')
-  // "Budget Revision" maps to "Revision as at" in the actual data
-  const budgetRevisionType = resolveFinancialType(data, project, 'revision')
+  // "Latest Budget" (was "Budget Revision") — resolves via "revision" or "latest budget"
+  const budgetRevisionType = resolveFinancialType(data, project, 'revision') || resolveFinancialType(data, project, 'latest budget')
   
   // Get 2nd tier items
   const incomeItems = getSecondTierItems(data, project, '1')  // 1.1, 1.2, etc.
@@ -3465,13 +3547,13 @@ function handleAnalyzeQuery(data: FinancialRow[], project: string): FuzzyResult 
     })
   }
   
-  // Comparison 6: Projection vs Budget Revision - Exceeds Budget Revision
+  // Comparison 6: Projection vs Latest Budget - Exceeds Latest Budget
   if (budgetRevisionType && projectionType) {
     compIndex++
-    const items = runComparison(data, project, costItems, projectionType, budgetRevisionType, 'gt', 'Projected', 'Budget Revision')
+    const items = runComparison(data, project, costItems, projectionType, budgetRevisionType, 'gt', 'Projected', 'Latest Budget')
     comparisons.push({
       comparisonIndex: compIndex,
-      title: 'Projection vs Budget Revision - Exceeds Budget Revision',
+      title: 'Projection vs Latest Budget - Exceeds Latest Budget',
       category: 'cost',
       operator: 'gt',
       finType1: projectionType,
@@ -3498,7 +3580,7 @@ function handleAnalyzeQuery(data: FinancialRow[], project: string): FuzzyResult 
   if (businessPlanType) response += `• Business Plan: "${businessPlanType}"\n`
   if (wipType) response += `• Audit Report (WIP): "${wipType}"\n`
   if (committedType) response += `• Committed: "${committedType}"\n`
-  if (budgetRevisionType) response += `• Budget Revision: "${budgetRevisionType}"\n`
+  if (budgetRevisionType) response += `• Latest Budget: "${budgetRevisionType}"\n`
   
   // Show warnings for missing types
   const missingTypes: string[] = []
@@ -3506,7 +3588,7 @@ function handleAnalyzeQuery(data: FinancialRow[], project: string): FuzzyResult 
   if (!businessPlanType) missingTypes.push('Business Plan')
   if (!wipType) missingTypes.push('Audit Report (WIP)')
   if (!committedType) missingTypes.push('Committed')
-  if (!budgetRevisionType) missingTypes.push('Budget Revision')
+  if (!budgetRevisionType) missingTypes.push('Latest Budget')
   
   if (missingTypes.length > 0) {
     response += `\n⚠️ **Not found:** ${missingTypes.join(', ')}\n`

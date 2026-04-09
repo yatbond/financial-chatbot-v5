@@ -137,7 +137,7 @@ function CandidateMessage({ content, candidates, onSelect }: {
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "👋 Welcome to Financial Chatbot v5!\n\n**Commands:**\n• `analyze` — Run financial analysis (6 comparisons)\n• `detail X` — Drill down into Analyze results\n• `compare X vs Y` — Compare two Financial Types\n• `total [item] [type]` — Sum all sub-items\n• `list` — Show all data items\n• `risk` — Risk items across WIP/Committed/CF\n\n**Financial Types:**\n• `bp`, `budget`, `business plan` → Business Plan\n• `projection`, `projected` → Projection as at\n• `wip`, `audit` → Audit Report (WIP)\n• `committed` → Committed Value / Cost as at\n• `cf`, `cashflow`, `cash flow` → Cash Flow (separate sheet)\n• `revision`, `rev` → Revision as at\n\n**Data Types:**\n• `gp` → Gross Profit\n• `np`, `net profit` → Net Profit\n• `prelim`, `preliminaries` → Preliminaries (2.1)\n• `materials` → Materials (2.2)\n• `plant` → Plant & Machinery (2.3)\n• `subcon` → Subcontractor (2.4)\n\nType `shortcuts` for full help." }
+    { role: 'assistant', content: "👋 Welcome to Financial Chatbot v5!\n\n**Commands:**\n• `analyze` — Run financial analysis (6 comparisons)\n• `detail X` — Drill down into results\n• `compare X vs Y` — Compare two Financial Types\n• `total [item] [type]` — Sum all sub-items\n• `list` — Show all data items\n• `trend [metric] [months]` — Show trends over time\n• `risk` — Risk items across WIP/Committed/CF\n• `cash flow` — Last 12 months GP summary\n• `type` — List all Financial Types\n• `shortcuts` — Full help with all shortcuts\n\n**Financial Types:**\n• `bp` → Business Plan\n• `budget`/`bt` → Latest Budget\n• `1wb` → 1st Working Budget\n• `tender` → Budget Tender\n• `projection`/`projected` → Projection\n• `wip`/`audit` → WIP\n• `committed` → Committed Cost\n• `revision`/`rev` → Latest Budget (same)\n• `cf`/`cashflow` → Cash Flow\n• `accrual` → Accrual\n\n**Data Types:**\n• `gp` → Gross Profit\n• `np` → Net Profit\n• `prelim` → Preliminaries\n• `materials` → Materials\n• `plant` → Plant & Machinery\n• `subcon` → Subcontractor\n\nType `shortcuts` for full help." }
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -432,12 +432,16 @@ export default function Home() {
                   <div className="space-y-2 text-xs">
                     <h4 className="text-slate-300 font-semibold mb-2">Available Commands</h4>
                     {[
-                      { cmd: 'Analyze', desc: 'Run comprehensive financial analysis' },
-                      { cmd: 'Detail X', desc: 'Drill down into section X (e.g. Detail 4)' },
-                      { cmd: 'Detail X.Y', desc: 'Drill into sub-item (e.g. Detail 4.2)' },
-                      { cmd: 'Total [Item] [Type]', desc: 'Sum sub-items (e.g. Total 4 bp)' },
-                      { cmd: 'Compare X with Y', desc: 'Compare financial types (e.g. Compare bp with wip)' },
-                      { cmd: 'Trend [metric] [months]', desc: 'Show trends (e.g. Trend gp 6)' },
+                      { cmd: 'Analyze', desc: 'Run financial analysis (6 comparisons)' },
+                      { cmd: 'Compare X vs Y', desc: 'Compare two financial types' },
+                      { cmd: 'Trend [metric] [N]', desc: 'Show values over N months' },
+                      { cmd: 'List', desc: 'Show data items (list, list more, list 2.2)' },
+                      { cmd: 'Total [item] [type]', desc: 'Sum sub-items under a parent' },
+                      { cmd: 'Detail X', desc: 'Drill down into results' },
+                      { cmd: 'Risk', desc: 'Risk items across WIP/Committed/CF' },
+                      { cmd: 'Cash Flow', desc: 'Last 12 months GP summary' },
+                      { cmd: 'Type', desc: 'List all Financial Types & Sheets' },
+                      { cmd: 'Shortcuts', desc: 'Full help with all shortcuts' },
                     ].map(({ cmd, desc }) => (
                       <div key={cmd} className="flex items-start gap-2 py-1">
                         <code className="bg-slate-700 text-blue-300 px-1.5 py-0.5 rounded text-[11px] font-mono whitespace-nowrap shrink-0">{cmd}</code>
@@ -447,11 +451,11 @@ export default function Home() {
                     <div className="mt-3 pt-2 border-t border-slate-700">
                       <h4 className="text-slate-300 font-semibold mb-1">💡 Examples</h4>
                       <div className="text-slate-500 space-y-0.5">
-                        <div>"<span className="text-slate-300">What is the gross profit?</span>"</div>
                         <div>"<span className="text-slate-300">Show projected gp</span>"</div>
-                        <div>"<span className="text-slate-300">Compare bp with wip</span>"</div>
-                        <div>"<span className="text-slate-300">Detail 4</span>" → "<span className="text-slate-300">Detail 4.2</span>"</div>
-                        <div>"<span className="text-slate-300">Trend gp 12</span>"</div>
+                        <div>"<span className="text-slate-300">compare bp with wip</span>"</div>
+                        <div>"<span className="text-slate-300">trend gp 12</span>"</div>
+                        <div>"<span className="text-slate-300">total materials projection</span>"</div>
+                        <div>"<span className="text-slate-300">risk</span>" → "<span className="text-slate-300">detail 1</span>"</div>
                       </div>
                     </div>
                   </div>
@@ -461,23 +465,24 @@ export default function Home() {
                   <div className="space-y-1 text-xs">
                     <h4 className="text-slate-300 font-semibold mb-2">Financial Type Shortcuts</h4>
                     {[
-                      { shortcuts: 'bp, budget', full: 'Business Plan' },
-                      { shortcuts: 'projection, projected', full: 'Projection as at' },
-                      { shortcuts: 'wip', full: 'Audit Report (WIP)' },
-                      { shortcuts: 'committed', full: 'Committed Value / Cost as at' },
-                      { shortcuts: 'revision, rev', full: 'Revision as at' },
+                      { shortcuts: 'bp', full: 'Business Plan' },
+                      { shortcuts: 'budget, bt', full: 'Latest Budget' },
+                      { shortcuts: 'revision, rev', full: 'Latest Budget (same as budget/bt)' },
+                      { shortcuts: '1wb', full: '1st Working Budget' },
                       { shortcuts: 'tender', full: 'Budget Tender' },
+                      { shortcuts: 'projection, projected', full: 'Projection' },
+                      { shortcuts: 'wip, audit', full: 'WIP' },
+                      { shortcuts: 'committed', full: 'Committed Cost' },
                       { shortcuts: 'cf, cashflow', full: 'Cash Flow' },
-                      { shortcuts: 'original', full: 'Original Budget' },
-                      { shortcuts: 'forecast', full: 'Forecast' },
-                      { shortcuts: 'actual', full: 'Actual' },
+                      { shortcuts: 'accrual', full: 'Accrual' },
                     ].map(({ shortcuts, full }) => (
                       <div key={shortcuts} className="flex items-center gap-2 py-0.5">
                         <code className="bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded text-[11px] font-mono whitespace-nowrap shrink-0">{shortcuts}</code>
                         <span className="text-slate-500">→</span>
                         <span className="text-slate-300">{full}</span>
                       </div>
-                    ))}
+                    ))
+                    }
                     <div className="mt-3 pt-2 border-t border-slate-700 text-slate-500">
                       💡 Use these in queries: "<span className="text-slate-300">Show bp gp</span>" = Business Plan Gross Profit
                     </div>
@@ -488,18 +493,19 @@ export default function Home() {
                   <div className="space-y-1 text-xs">
                     <h4 className="text-slate-300 font-semibold mb-2">Data Type Shortcuts</h4>
                     {[
-                      { shortcuts: 'gp', full: 'Gross Profit' },
-                      { shortcuts: 'np', full: 'Net Profit' },
-                      { shortcuts: 'prelim', full: 'Preliminaries' },
-                      { shortcuts: 'subcon, sub', full: 'Subcontractor' },
-                      { shortcuts: 'labour', full: 'Labour' },
-                      { shortcuts: 'material, mat', full: 'Materials' },
-                      { shortcuts: 'plant', full: 'Plant & Equipment' },
-                      { shortcuts: 'revenue, rev', full: 'Contract Revenue' },
-                      { shortcuts: 'cost', full: 'Total Cost' },
-                      { shortcuts: 'overhead, oh', full: 'Overheads' },
-                      { shortcuts: 'variation, vo', full: 'Variation Orders' },
+                      { shortcuts: 'gp', full: 'Gross Profit (Item 3)' },
+                      { shortcuts: 'np', full: 'Net Profit/Loss (Item 7)' },
+                      { shortcuts: 'cost', full: 'Total Cost (Item 2)' },
+                      { shortcuts: 'income, revenue', full: 'Total Income (Item 1)' },
+                      { shortcuts: 'prelim', full: 'Preliminaries (Item 2.1)' },
+                      { shortcuts: 'materials', full: 'Materials (Item 2.2)' },
+                      { shortcuts: 'plant', full: 'Plant & Machinery (Item 2.3)' },
+                      { shortcuts: 'subcon, sub, subbie', full: 'Subcontractor (Item 2.4)' },
+                      { shortcuts: 'labour', full: 'Direct Labour (Item 2.5)' },
+                      { shortcuts: 'rebar', full: 'Reinforcement (Item 2.2.2)' },
+                      { shortcuts: 'vo, variation', full: 'Variation Orders' },
                       { shortcuts: 'retention', full: 'Retention' },
+                      { shortcuts: 'overhead, oh', full: 'Overheads (Item 6)' },
                     ].map(({ shortcuts, full }) => (
                       <div key={shortcuts} className="flex items-center gap-2 py-0.5">
                         <code className="bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded text-[11px] font-mono whitespace-nowrap shrink-0">{shortcuts}</code>
