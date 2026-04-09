@@ -394,6 +394,7 @@ interface FinancialRow {
   Item_Code: string
   Value: number | string
   _project?: string
+  _rowIndex?: number  // Row number from flat.csv (0-indexed, +2 for header)
 }
 
 interface ProjectInfo {
@@ -652,7 +653,8 @@ async function loadProjectData(filename: string, year: string, month: string): P
         Data_Type: dataType || '',
         Item_Code: itemCode,
         Value: value,
-        _project: projectLabel
+        _project: projectLabel,
+        _rowIndex: i + 2,  // +2 because row 0 is header, row 1 is first data row
       }
       data.push(row)
     }
@@ -845,6 +847,7 @@ interface FuzzyResult {
     month: string
     year: string
     matchedKeywords: string[]
+    rowLabel?: string  // Row number from flat.csv (e.g., "Row B", "Row C")
   }>
 }
 
@@ -4436,7 +4439,8 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
       itemCode: d.Item_Code,
       month: d.Month,
       year: d.Year,
-      matchedKeywords: Array.from(new Set(matchedKeywords)) // Remove duplicates
+      matchedKeywords: Array.from(new Set(matchedKeywords)),
+      rowLabel: d._rowIndex ? String.fromCharCode(64 + (d._rowIndex % 26) || 26) + (Math.floor(d._rowIndex / 26) > 0 ? String(Math.floor(d._rowIndex / 26)) : "") : undefined
     }
   }).sort((a, b) => b.score - a.score).slice(0, 5)
 
@@ -4447,7 +4451,9 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
     response += `\n**Available Records (click to select):**\n`
     candidates.forEach((c) => {
       const matches = c.matchedKeywords.length > 0 ? ` [Matched: ${c.matchedKeywords.join(', ')}]` : ''
-      response += `[${c.id}] ${c.month}/${c.year}/${c.sheet}/${c.financialType}/${c.dataType}/${c.itemCode}: ${formatCurrency(toNumber(c.value))} [Score: ${c.score}]${matches}\n`
+      const rowLabel = c.rowLabel ? ` • Row ${c.rowLabel}` : ''
+      response += `[${c.id}] ${c.month}/${c.year}/${c.sheet}/${c.financialType}/${c.dataType}/${c.itemCode}: ${formatCurrency(toNumber(c.value))} [Score: ${c.score}]${rowLabel}${matches}
+`
     })
   }
 
