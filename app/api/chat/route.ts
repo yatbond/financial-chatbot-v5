@@ -4326,7 +4326,12 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
   // Show year - only show actual year if user specified it
   response += `• Year: ${hasUserDate && parsedDate.year ? parsedDate.year : 'All'}\n`
   response += `• Data Type: ${targetDataType || 'All'}\n`
-  response += `• Item Code: ${targetItemCode || 'All'}\n\n`
+  response += `• Item Code: ${targetItemCode || 'All'}\n`
+  // Add Row number for the top match (first filtered result)
+  if (filtered.length > 0 && filtered[0]._rowIndex) {
+    response += `• Row ${filtered[0]._rowIndex}\n`
+  }
+  response += `\n`
 
   // Build source ref for the total
   const totalSourceRef = filtered.length === 1 
