@@ -4067,7 +4067,38 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
     }
   }
 
-  // Step 5: Extract Data_Type from question (find closest match)
+  // Step 4b: Detect item codes from known keywords (e.g., "subcontractor" → 2.4)
+  const ITEM_CODE_KEYWORDS: Record<string, string> = {
+    'subcontractor': '2.4',
+    'subcon': '2.4',
+    'subbie': '2.4',
+    'subcontractors': '2.4',
+    'preliminaries': '2.1',
+    'prelim': '2.1',
+    'materials': '2.2',
+    'plant': '2.3',
+    'machinery': '2.3',
+    'labour': '2.5',
+    'labor': '2.5',
+    'staff': '2.6',
+    'supervision': '2.6',
+    'admin': '2.7',
+    'administration': '2.7',
+    'insurance': '2.8',
+    'bond': '2.9',
+    'overhead': '2.6',
+    'rebar': '2.2',
+  }
+  
+  let keywordItemCode: string | null = null
+  for (const [keyword, code] of Object.entries(ITEM_CODE_KEYWORDS)) {
+    if (questionWords.includes(keyword)) {
+      keywordItemCode = code
+      break
+    }
+  }
+
+// Step 5: Extract Data_Type from question (find closest match)
   // IMPORTANT: "gp" / "np" should map to Data_Type like "Gross Profit" / "Net Profit"
 
   // Special mapping for common acronyms (must come first!)
@@ -4075,7 +4106,10 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
     'np': ['net profit', 'acc. net profit'],
     'gp': ['gross profit', 'acc. gross profit'],
     'wip': ['work in progress'],
-    'cf': ['cash flow']
+    'cf': ['cash flow'],
+    'subcontractor': ['total subcontractor'],
+    'subcon': ['total subcontractor'],
+    'subbie': ['total subcontractor'],
   }
 
   // Check if question contains any known acronyms
