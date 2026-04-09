@@ -4127,11 +4127,12 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
     }
   }
 
-  // If no acronym match found, continue with regular matching
-  let bestDataTypeMatchCount = 0
-
   // Helper to check if a word looks like an item code (e.g., "2.1", "1.2.3")
   const isItemCodePattern = (word: string) => /^\d+(\.\d+)+$/.test(word)
+
+  // If no acronym match found, collect ALL Data_Type candidates with scores
+  let bestDataTypeMatchCount = 0
+  const dataTypeCandidates: Array<{ dataType: string; score: number; matchedWords: string[] }> = []
 
   if (!targetDataType) {
     for (const dt of dataTypes) {
@@ -4142,10 +4143,7 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
       let matchCount = 0
       const matchedWords: string[] = []
       for (const qWord of questionWords) {
-        // Skip words that look like item codes (e.g., "2.1", "1.2.3")
         if (isItemCodePattern(qWord)) continue
-        // Skip words that are Financial_Type keywords (e.g., "projected", "budget")
-        // This prevents "projected" from matching "Project Code" in Data_Type
         if (isFinancialTypeKeyword(qWord)) continue
         
         for (const dtWord of dtWords) {
@@ -4161,9 +4159,7 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
       for (const qWord of questionWords) {
         if (matchedWords.includes(qWord)) continue
         if (qWord.length <= 3) continue
-        // Skip words that look like item codes
         if (isItemCodePattern(qWord)) continue
-        // Skip words that are Financial_Type keywords
         if (isFinancialTypeKeyword(qWord)) continue
 
         for (const dtWord of dtWords) {
@@ -4181,19 +4177,37 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
         }
       }
 
-      if (matchCount > bestDataTypeMatchCount) {
-        bestDataTypeMatchCount = matchCount
-        targetDataType = dt
+      if (matchCount > 0) {
+        dataTypeCandidates.push({ dataType: dt, score: matchCount, matchedWords })
+        if (matchCount > bestDataTypeMatchCount) {
+          bestDataTypeMatchCount = matchCount
+        }
+      }
+    }
+
+    // Sort by score descending
+    dataTypeCandidates.sort((a, b) => b.score - a.score)
+
+    // If we have a clear winner (score >= 2, or only 1 candidate), use it directly
+    // Otherwise, if keyword item code was found, skip Data_Type and rely on item code
+    if (dataTypeCandidates.length > 0) {
+      if (dataTypeCandidates[0].score >= 2 && (dataTypeCandidates.length === 1 || dataTypeCandidates[0].score > (dataTypeCandidates[1]?.score ?? 0))) {
+        // Clear winner
+        targetDataType = dataTypeCandidates[0].dataType
+      } else if (keywordItemCode && dataTypeCandidates[0].score <= 1) {
+        // Weak match + have item code → skip Data_Type, use item code only
+        targetDataType = null
+      } else if (dataTypeCandidates.length > 0) {
+        // Ambiguous or weak → show options to user
+        targetDataType = dataTypeCandidates[0].dataType
       }
     }
   }
 
-  // If no match found, use fuzzy matching with all significant words
-  if (!targetDataType) {
+  // If still no match found, use fuzzy matching with all significant words
+  if (!targetDataType && !keywordItemCode) {
     for (const word of questionWords) {
-      // Skip words that look like item codes (e.g., "2.1", "1.2.3")
       if (isItemCodePattern(word)) continue
-      // Skip words that are Financial_Type keywords
       if (isFinancialTypeKeyword(word)) continue
       
       const match = findClosestMatch(word, dataTypes)
@@ -4360,6 +4374,10 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
   // Show year - only show actual year if user specified it
   response += `• Year: ${hasUserDate && parsedDate.year ? parsedDate.year : 'All'}\n`
   response += `• Data Type: ${targetDataType || 'All'}\n`
+  // Show alternative Data Types if there were multiple candidates
+  if (dataTypeCandidates.length > 1 && dataTypeCandidates[0].score <= 2) {
+    response += `• Other matches: ${dataTypeCandidates.slice(1, 4).map(c => c.dataType).join(', ')}\n`
+  }
   response += `• Item Code: ${targetItemCode || 'All'}\n`
   // Add Row number for the top match (first filtered result)
   if (filtered.length > 0 && filtered[0]._rowIndex) {
