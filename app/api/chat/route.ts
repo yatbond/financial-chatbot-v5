@@ -266,7 +266,6 @@ const ACRONYM_MAP: Record<string, string> = {
   'reconciliation': 'total reconciliation',
 
   // === Other synonyms ===
-  'staff': 'supervision',
   'labour': 'manpower (labour)',
   'labor': 'manpower (labour)',
   'lab': 'labour',
