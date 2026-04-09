@@ -4440,7 +4440,7 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
       month: d.Month,
       year: d.Year,
       matchedKeywords: Array.from(new Set(matchedKeywords)),
-      rowLabel: d._rowIndex ? String.fromCharCode(64 + (d._rowIndex % 26) || 26) + (Math.floor(d._rowIndex / 26) > 0 ? String(Math.floor(d._rowIndex / 26)) : "") : undefined
+      rowLabel: d._rowIndex ? String(d._rowIndex) : undefined
     }
   }).sort((a, b) => b.score - a.score).slice(0, 5)
 
