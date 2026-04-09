@@ -125,7 +125,6 @@ const ACRONYM_MAP: Record<string, string> = {
   'rev': 'latest budget',
   'budget revision': 'latest budget',
   'rev as at': 'latest budget',
-  'latest budget': 'latest budget',
   'tender': 'budget tender',
   'budget tender': 'budget tender',
   'committed': 'committed cost',
