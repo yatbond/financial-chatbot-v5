@@ -309,6 +309,19 @@ interface TrendContext {
   children: Array<{ code: string; name: string }>  // Cached children list
 }
 
+// ============================================
+// Basic Query Context Cache (for Detail drill-down after non-trend queries)
+// ============================================
+interface BasicQueryContext {
+  itemCode: string
+  itemName: string
+  sheetName: string
+  financialType: string
+  children: Array<{ code: string; name: string }>
+}
+
+const basicQueryContextCache: Map<string, BasicQueryContext> = new Map()
+
 // Global cache for last Trend context (per project)
 const trendContextCache: Map<string, TrendContext> = new Map()
 let lastDetailPage: number = 0  // Track pagination for "more" command
@@ -3696,7 +3709,7 @@ function handleAnalyzeQuery(data: FinancialRow[], project: string): FuzzyResult 
   return { text: response, candidates: [] }
 }
 
-// Handle "Detail X" or "Detail X.Y" query
+// Handle "Detail X" or "Detail X.Y" query (for Analyze context)
 function handleDetailQuery(data: FinancialRow[], project: string, question: string): FuzzyResult | null {
   const parsed = parseDetailQuery(question)
   if (!parsed) return null
@@ -3828,6 +3841,115 @@ function handleDetailQuery(data: FinancialRow[], project: string, question: stri
   }
 }
 
+// Handle "Detail X" or "Detail X.Y" query for Basic Query context (Issue 1 fix)
+function handleDetailBasicQuery(data: FinancialRow[], project: string, question: string): FuzzyResult | null {
+  const lowerQ = question.toLowerCase().trim()
+  const detailMatch = lowerQ.match(/^detail\s+(\d+)(\.\d+)?$/)
+  
+  if (!detailMatch) return null
+  
+  const context = basicQueryContextCache.get(project)
+  if (!context || context.children.length === 0) return null
+  
+  const childIndex = parseInt(detailMatch[1]) - 1
+  const subIndex = detailMatch[2] ? parseInt(detailMatch[2].slice(1)) : undefined
+  
+  if (childIndex < 0 || childIndex >= context.children.length) {
+    return {
+      text: `❌ Invalid detail number. Please use a number between 1 and ${context.children.length}.`,
+      candidates: []
+    }
+  }
+  
+  if (subIndex !== undefined) {
+    // Detail X.Y - Get grandchildren (3rd tier)
+    const selectedChild = context.children[childIndex]
+    const grandchildPrefix = selectedChild.code + '.'
+    const grandchildren: Array<{ code: string; name: string }> = []
+    const seenCodes = new Set<string>()
+    
+    for (const row of data.filter(d => d._project === project)) {
+      if (row.Item_Code && row.Item_Code.startsWith(grandchildPrefix)) {
+        const parts = row.Item_Code.split('.')
+        const parentParts = selectedChild.code.split('.')
+        if (parts.length === parentParts.length + 1 && !seenCodes.has(row.Item_Code)) {
+          seenCodes.add(row.Item_Code)
+          grandchildren.push({ code: row.Item_Code, name: row.Data_Type })
+        }
+      }
+    }
+    
+    if (grandchildren.length === 0) {
+      return {
+        text: `❌ No sub-items found for ${selectedChild.code} ${selectedChild.name}.`,
+        candidates: []
+      }
+    }
+    
+    grandchildren.sort((a, b) => {
+      const aParts = a.code.split('.').map(Number)
+      const bParts = b.code.split('.').map(Number)
+      for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+        const diff = (aParts[i] || 0) - (bParts[i] || 0)
+        if (diff !== 0) return diff
+      }
+      return 0
+    })
+    
+    let response = `## Detail ${childIndex + 1}.${subIndex}: ${selectedChild.name}\n\n`
+    response += `**Parent:** ${selectedChild.code} - ${selectedChild.name}\n\n`
+    response += `| Item Code | Data Type | Sheet | Financial Type | Value |\n`
+    response += `|-----------|-----------|-------|----------------|-------|\n`
+    
+    for (const gc of grandchildren) {
+      const rows = data.filter(d => 
+        d._project === project && 
+        d.Item_Code === gc.code &&
+        d.Sheet_Name === context.sheetName &&
+        d.Financial_Type === context.financialType
+      )
+      if (rows.length > 0) {
+        const total = rows.reduce((sum, r) => sum + (typeof r.Value === 'number' ? r.Value : parseFloat(r.Value) || 0), 0)
+        response += `| ${gc.code} | ${gc.name} | ${context.sheetName} | ${context.financialType} | ${formatCurrency(total)} |\n`
+      }
+    }
+    
+    return { text: response, candidates: [] }
+    
+  } else {
+    // Detail X - Show all children with values
+    const selectedChild = context.children[childIndex]
+    
+    let response = `## Detail ${childIndex + 1}: ${context.itemName}\n\n`
+    response += `**Parent Item:** ${context.itemCode} - ${context.itemName}\n`
+    response += `**Sheet:** ${context.sheetName} | **Financial Type:** ${context.financialType}\n\n`
+    response += `| # | Item Code | Data Type | Value |\n`
+    response += `|---|-----------|-----------|-------|\n`
+    
+    let idx = 0
+    for (const child of context.children) {
+      const rows = data.filter(d => 
+        d._project === project && 
+        d.Item_Code === child.code &&
+        d.Sheet_Name === context.sheetName &&
+        d.Financial_Type === context.financialType
+      )
+      if (rows.length > 0) {
+        idx++
+        const total = rows.reduce((sum, r) => sum + (typeof r.Value === 'number' ? r.Value : parseFloat(r.Value) || 0), 0)
+        response += `| ${idx} | ${child.code} | ${child.name} | ${formatCurrency(total)} |\n`
+      }
+    }
+    
+    if (idx === 0) {
+      response += `| (no data found for sub-items) | - | - | - |\n`
+    }
+    
+    response += `\n💡 Type **"Detail ${childIndex + 1}.Y"** for breakdown of a specific sub-item.\n`
+    
+    return { text: response, candidates: [] }
+  }
+}
 // Main query handler with new logic
 function answerQuestion(data: FinancialRow[], project: string, question: string, defaultMonth: string): FuzzyResult {
   const expandedQuestion = expandAcronyms(question).toLowerCase()
@@ -3927,9 +4049,13 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
       if (detailResult) return detailResult
     }
 
+    // Try Basic Query detail (Issue 1 fix - drill-down after basic fuzzy queries)
+    const detailBasicResult = handleDetailBasicQuery(data, project, question)
+    if (detailBasicResult) return detailBasicResult
+
     // No context found for any handler
     return {
-      text: '❌ No previous query found to drill down into.\n\nPlease run a query first:\n• **Trend:** e.g., "trend cashflow cost"\n• **Compare:** e.g., "compare cashflow subbie 9 2025 vs 12 2025"\n• **Analyze:** e.g., "Analyze"\n\nThen type **detail** to see sub-items.',
+      text: '❌ No previous query found to drill down into.\n\nPlease run a query first:\n• **Trend:** e.g., "trend cashflow cost"\n• **Compare:** e.g., "compare cashflow subbie 9 2025 vs 12 2025"\n• **Analyze:** e.g., "Analyze"\n• **Basic query:** e.g., "committed contra charge"\n\nThen type **detail** to see sub-items.',
       candidates: []
     }
   }
@@ -3960,9 +4086,39 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
   const userSpecifiedMonth = parsedDate.month && parsedDate.month !== defaultMonth
   const hasUserDate = userSpecifiedYear || userSpecifiedMonth
 
+  // PRE-SCAN: Quick financial type detection for sheet resolution
+  const financialTypesList = getUniqueValues(data, project, 'Financial_Type')
+  let earlyFinType: string | undefined
+  for (const qWord of questionWords) {
+    if (STOPWORDS.has(qWord)) continue
+    for (const ft of financialTypesList) {
+      if (ft.toLowerCase().includes(qWord)) {
+        earlyFinType = ft
+        break
+      }
+    }
+    if (earlyFinType) break
+  }
+
   if (!hasUserDate) {
-    // No date specified by user → Default to Financial Status, skip sheet detection
-    targetSheet = 'Financial Status'
+    // No date specified by user → Check if financial_type was mentioned
+    // If yes, find the sheet that contains that financial_type from monthly data
+    // Otherwise default to Financial Status
+    if (earlyFinType) {
+      const monthlySheets = sheets.filter(s => s !== 'Financial Status')
+      for (const sheet of monthlySheets) {
+        const sheetHasFinType = projectData.some(d => 
+          d.Sheet_Name === sheet && d.Financial_Type === earlyFinType
+        )
+        if (sheetHasFinType) {
+          targetSheet = sheet
+          break
+        }
+      }
+    }
+    if (!targetSheet) {
+      targetSheet = 'Financial Status'
+    }
   } else {
     // Date specified by user → Check if user explicitly mentioned a sheet
     // First try: check if user explicitly mentioned a sheet
@@ -4319,29 +4475,50 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
   }
 
   if (filtered.length === 0) {
-    // PHASE 2: Generate helpful suggestions based on available data
-    const availableMonths = Array.from(new Set(projectData.map(d => d.Month))).sort()
-    const availableDataTypes = Array.from(new Set(projectData.map(d => d.Data_Type).filter(Boolean)))
-    const availableFinTypes = Array.from(new Set(projectData.map(d => d.Financial_Type).filter(Boolean)))
+    // PHASE 2: Generate CONTEXT-AWARE suggestions based on what's actually available
+    // Filter suggestions to the specific sheet/financial_type the user searched for
+    const relevantData = projectData.filter(d => {
+      if (targetSheet && d.Sheet_Name !== targetSheet) return false
+      if (targetFinType && d.Financial_Type !== targetFinType) return false
+      return true
+    })
+    
+    const availableMonths = relevantData.length > 0
+      ? Array.from(new Set(relevantData.map(d => d.Month))).sort((a, b) => parseInt(a) - parseInt(b))
+      : Array.from(new Set(projectData.map(d => d.Month))).sort((a, b) => parseInt(a) - parseInt(b))
+    const availableYears = relevantData.length > 0
+      ? Array.from(new Set(relevantData.map(d => d.Year))).sort()
+      : Array.from(new Set(projectData.map(d => d.Year))).sort()
+    const availableDataTypes = relevantData.length > 0
+      ? Array.from(new Set(relevantData.map(d => d.Data_Type).filter(Boolean)))
+      : Array.from(new Set(projectData.map(d => d.Data_Type).filter(Boolean)))
     
     let suggestions = `No data found matching your query.\n\nFilters attempted:`
     if (appliedSheet) suggestions += `\n- Sheet: ${appliedSheet}`
-    // Don't show month filter for Financial Status (it's not applicable)
     if (parsedDate.month && targetSheet !== 'Financial Status') suggestions += `\n- Month: ${parsedDate.month}`
     if (parsedDate.year) suggestions += `\n- Year: ${parsedDate.year}`
     if (targetFinType) suggestions += `\n- Financial Type: ${targetFinType}`
     if (targetDataType) suggestions += `\n- Data Type: ${targetDataType}`
     
-    // Add helpful suggestions
-    suggestions += `\n\n💡 Suggestions:`
+    suggestions += `\n\n💡 Available data for this query:`
+    if (availableYears.length > 0) {
+      suggestions += `\n• Available years: ${availableYears.join(', ')}`
+    }
     if (availableMonths.length > 0) {
-      suggestions += `\n• Available months: ${availableMonths.slice(0, 6).join(', ')}${availableMonths.length > 6 ? '...' : ''}`
+      suggestions += `\n• Available months: ${availableMonths.join(', ')}`
     }
     if (availableDataTypes.length > 0) {
-      suggestions += `\n• Try: "${availableDataTypes[0]}" (most common)`
+      suggestions += `\n• Available data types: ${availableDataTypes.slice(0, 10).join(', ')}`
     }
-    suggestions += `\n• Try: "gross profit", "projection", "budget", "cash flow"`
-    suggestions += `\n• Or try: "last month", "this month"`
+    // If specific month was requested but not available, show nearest months
+    if (parsedDate.month && parsedDate.year && !availableMonths.includes(parsedDate.month)) {
+      const yearData = relevantData.filter(d => d.Year === parsedDate.year)
+      if (yearData.length > 0) {
+        const monthsInYear = Array.from(new Set(yearData.map(d => d.Month))).sort((a, b) => parseInt(a) - parseInt(b))
+        suggestions += `\n\n⚠️ Month ${parsedDate.month}/${parsedDate.year} not available. Available in ${parsedDate.year}: ${monthsInYear.join(', ')}`
+      }
+    }
+    suggestions += `\n\nTry adjusting your query with an available month/year.`
     
     return { text: suggestions, candidates: [] }
   }
@@ -4480,11 +4657,8 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
     // Year match
     if (parsedDate.year && d.Year === parsedDate.year) matchScore += 15
 
-    // Bonus for common item codes
-    if (d.Item_Code === '3' || d.Item_Code === '1' || d.Item_Code === '2') matchScore += 5
-
-    // Bonus for Financial Status (default sheet)
-    if (d.Sheet_Name === 'Financial Status') matchScore += 2
+    // REMOVED: No arbitrary bonus for common item codes or Financial Status sheet
+    // Scoring should be purely based on query relevance to avoid biasing results
 
     return {
       id: 0, // Will be reassigned
@@ -4512,6 +4686,49 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
       response += `[${c.id}] ${c.month}/${c.year}/${c.sheet}/${c.financialType}/${c.dataType}/${c.itemCode}: ${formatCurrency(toNumber(c.value))} [Score: ${c.score}]${rowLabel}${matches}
 `
     })
+  }
+
+  // Save basic query context for drill-down (Issue 1 fix)
+  // Find children of the matched item for "detail" command
+  if (filtered.length > 0) {
+    const mainItemCode = targetItemCode || filtered[0]?.Item_Code || ''
+    const mainItemName = targetDataType || filtered[0]?.Data_Type || ''
+    const mainSheet = appliedSheet || filtered[0]?.Sheet_Name || ''
+    const mainFinType = targetFinType || filtered[0]?.Financial_Type || ''
+    
+    const children: Array<{ code: string; name: string }> = []
+    const childPrefix = mainItemCode + '.'
+    const seenChildCodes = new Set<string>()
+    for (const row of projectData) {
+      if (row.Item_Code && row.Item_Code.startsWith(childPrefix)) {
+        const parts = row.Item_Code.split('.')
+        const parentParts = mainItemCode.split('.')
+        if (parts.length === parentParts.length + 1 && !seenChildCodes.has(row.Item_Code)) {
+          seenChildCodes.add(row.Item_Code)
+          children.push({ code: row.Item_Code, name: row.Data_Type })
+        }
+      }
+    }
+    children.sort((a, b) => {
+      const aParts = a.code.split('.').map(Number)
+      const bParts = b.code.split('.').map(Number)
+      for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+        const diff = (aParts[i] || 0) - (bParts[i] || 0)
+        if (diff !== 0) return diff
+      }
+      return 0
+    })
+    
+    basicQueryContextCache.set(project, {
+      itemCode: mainItemCode,
+      itemName: mainItemName,
+      sheetName: mainSheet,
+      financialType: mainFinType,
+      children
+    })
+    
+    // Clear other contexts so "detail" after basic query uses this context
+    trendContextCache.delete(project)
   }
 
   return { text: response, candidates }
