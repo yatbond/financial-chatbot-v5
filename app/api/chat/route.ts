@@ -4108,8 +4108,9 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
   const parsedDate = parseDate(expandedQuestion, defaultMonth)
 
   // Step 2: Check Sheet_Name
-  // IF user didn't specify any date (only using defaults): default to "Financial Status"
-  // IF user specified a date: check if user mentioned a specific sheet
+  // Priority: 1) Sheet_name explicitly mentioned → use it
+  //          2) No date + no sheet mentioned → Financial Status (default)
+  //          3) Date specified + no sheet mentioned → check monthly data
   let targetSheet: string | undefined
   const sheets = getUniqueValues(data, project, 'Sheet_Name')
 
@@ -4118,47 +4119,83 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
   const userSpecifiedMonth = parsedDate.month && parsedDate.month !== defaultMonth
   const hasUserDate = userSpecifiedYear || userSpecifiedMonth
 
-  if (!hasUserDate) {
-    // No date specified by user → Default to Financial Status (cumulative data)
-    // Sheet resolution priority: Sheet_name > Financial_Type > Data_Type
-    // When no sheet is explicitly mentioned, Financial Status is the default
-    targetSheet = 'Financial Status'
-  } else {
-    // Date specified by user → Check if user explicitly mentioned a sheet
-    // First try: check if user explicitly mentioned a sheet
+  // Check if user explicitly mentioned a sheet name
+  // Distinguish between:
+  //   "committed plant" (1 keyword) → Sheet=Financial Status, FinType=Committed Cost
+  //   "committed committed plant" (2 keywords) → Sheet=Committed Cost, FinType=Committed Cost
+  // Strategy: count how many query words could be sheet identifiers
+  const sheetKeywords: Record<string, string> = {
+    'committed': 'Committed Cost',
+    'cashflow': 'Cash Flow',
+    'cash flow': 'Cash Flow',
+    'cf': 'Cash Flow',
+    'wip': 'Work In Progress',
+    'budget': 'Budget',
+    'bt': 'Budget',
+    'rev': 'Budget',
+    'revision': 'Budget',
+    'tender': 'Tender',
+    'projection': 'Projection',
+    'accrual': 'Accrual',
+    '1wb': '1 Week Before',
+    'gp': 'Gross Profit',
+  }
+  
+  // Count distinct query words matching sheet keywords
+  let sheetKeywordMatches: Array<{ word: string; sheet: string }> = []
+  const seenWords = new Set<string>()
+  for (const qWord of questionWords) {
+    const expanded = qWord.toLowerCase()
+    if (seenWords.has(expanded)) continue
+    seenWords.add(expanded)
+    if (sheetKeywords[expanded]) {
+      sheetKeywordMatches.push({ word: expanded, sheet: sheetKeywords[expanded] })
+    }
+  }
+
+  if (sheetKeywordMatches.length >= 2) {
+    // 2+ sheet keywords = user is specifying sheet + financial_type separately
+    // e.g. "committed committed plant" → sheet=Committed Cost, ftype=Committed Cost
+    targetSheet = sheetKeywordMatches[0].sheet
+  } else if (sheetKeywordMatches.length === 1) {
+    // 1 keyword = ambiguous — could be sheet OR financial type
+    // Check if the sheet name itself appears in the expanded question as a FULL phrase
+    // This handles explicit sheet mentions like "Committed Cost 2 2026"
     for (const sheet of sheets) {
-      const sheetLower = sheet.toLowerCase()
-      // Check if sheet name appears in question (with or without "sheet")
-      if (expandedQuestion.includes(sheetLower.replace(/\s+/g, '')) ||
-          expandedQuestion.includes(sheetLower.split(' ')[0])) {
+      const sheetLower = sheet.toLowerCase().replace(/\s+/g, '')
+      if (expandedQuestion.replace(/\s+/g, '').includes(sheetLower)) {
+        // Full sheet name match (e.g. "committed cost" as a phrase)
         targetSheet = sheet
         break
       }
     }
-
-    // Second: check for common sheet name keywords even without "sheet" prefix
-    if (!targetSheet) {
-      const sheetKeywords: Record<string, string> = {
-        'cashflow': 'Cash Flow',
-        'cash flow': 'Cash Flow',
-        'projection': 'Projection',
-        'committed': 'Committed Cost',
-        'accrual': 'Accrual',
-        'financial status': 'Financial Status',
-        'financial': 'Financial Status'
-      }
-      for (const [keyword, sheetName] of Object.entries(sheetKeywords)) {
-        // Check if keyword is in expanded question (as standalone word/phrase)
-        const keywordRegex = new RegExp(`\\b${keyword.replace(/\s+/g, '\\s+')}\\b`, 'i')
-        if (keywordRegex.test(expandedQuestion)) {
-          // Verify this sheet actually exists in the data (handle whitespace/blank issues)
-          const found = sheets.find(s => s && s.trim() && s.trim().toLowerCase() === sheetName.toLowerCase())
-          if (found) {
-            targetSheet = found
-            break
-          }
+    // If no full sheet name match, single keyword defaults to financial_type, not sheet
+    // "committed plant" → NOT sheet=Committed Cost, it's FinType=Committed Cost
+  }
+  // Also check for full sheet name phrases (multi-word sheet names like "Financial Status")
+  if (!targetSheet) {
+    for (const sheet of sheets) {
+      const sheetLower = sheet.toLowerCase()
+      if (expandedQuestion.includes(sheetLower.replace(/\s+/g, '')) ||
+          expandedQuestion.includes(sheetLower.split(' ')[0])) {
+        // Only match if it's a sheet that ISN'T also a financial type keyword
+        // Financial Status is the default, so mentioning "financial" doesn't count as explicit
+        if (sheet !== 'Financial Status' && !Object.values(sheetKeywords).includes(sheet)) {
+          targetSheet = sheet
+          break
         }
       }
+    }
+  }
+
+  if (!targetSheet) {
+    if (!hasUserDate) {
+      // No date + no sheet mentioned → Financial Status (cumulative data)
+      targetSheet = 'Financial Status'
+    } else {
+      // Date specified + no sheet mentioned → default to Financial Status
+      // (monthly data for a specific period still shows in Financial Status context)
+      targetSheet = 'Financial Status'
     }
   }
 
