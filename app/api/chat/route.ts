@@ -366,13 +366,13 @@ let lastCompareDetailPage: number = 0  // Track pagination for "more" command
 // Maps canonical Financial_Type names to their user-facing keyword variants
 // UPDATED per financial_type_map.csv v2 (Latest Budget, 1st Working Budget, etc.)
 const FINANCIAL_TYPE_KEYWORDS: Record<string, string[]> = {
-  'cash flow': ['cash flow', 'cashflow', 'cf'],
-  'committed cost': ['committed', 'committed cost', 'committed value'],
-  'projection': ['projection', 'projected'],
+  'cash flow': ['cash flow', 'cashflow', 'cf', 'cash'],
+  'committed cost': ['committed', 'committed cost', 'committed value', 'commit'],
+  'projection': ['projection', 'projected', 'project'],
   'accrual': ['accrual', 'accrued'],
-  'business plan': ['business plan', 'bp'],
+  'business plan': ['business plan', 'bp', 'plan'],
   'latest budget': ['latest budget', 'budget', 'bt', 'revision', 'rev', 'rev as at', 'budget revision'],
-  '1st working budget': ['1st working budget', '1st working', 'first working', '1wb'],
+  '1st working budget': ['1st working budget', '1st working', 'first working', '1wb', 'working'],
   'budget tender': ['budget tender', 'tender'],
   'wip': ['wip', 'audit', 'audit report'],
 }
@@ -3298,7 +3298,7 @@ function resolveFinancialType(data: FinancialRow[], project: string, keyword: st
   const EXPLICIT_FINANCIAL_TYPE_MAP: Record<string, string[]> = {
     'business plan':       ['Business Plan'],
     'bp':                  ['Business Plan'],
-    'budget':              ['Business Plan'],
+    'budget':              ['Latest Budget'],
     'revision':            ['Revision as at'],
     'revision as at':      ['Revision as at'],
     'budget revision':     ['Revision as at'],
