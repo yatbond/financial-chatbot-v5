@@ -4157,33 +4157,22 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
     // 2+ sheet keywords = user is specifying sheet + financial_type separately
     // e.g. "committed committed plant" → sheet=Committed Cost, ftype=Committed Cost
     targetSheet = sheetKeywordMatches[0].sheet
-  } else if (sheetKeywordMatches.length === 1) {
-    // 1 keyword = ambiguous — could be sheet OR financial type
-    // Check if the sheet name itself appears in the expanded question as a FULL phrase
-    // This handles explicit sheet mentions like "Committed Cost 2 2026"
-    for (const sheet of sheets) {
-      const sheetLower = sheet.toLowerCase().replace(/\s+/g, '')
-      if (expandedQuestion.replace(/\s+/g, '').includes(sheetLower)) {
-        // Full sheet name match (e.g. "committed cost" as a phrase)
-        targetSheet = sheet
-        break
-      }
-    }
-    // If no full sheet name match, single keyword defaults to financial_type, not sheet
-    // "committed plant" → NOT sheet=Committed Cost, it's FinType=Committed Cost
   }
-  // Also check for full sheet name phrases (multi-word sheet names like "Financial Status")
+  // If sheetKeywordMatches.length === 1 → single keyword = financial_type, NOT sheet
+  // "committed plant" → Sheet=Financial Status, FinType=Committed Cost
+  // Do NOT check for full sheet name phrases — the acronym expansion makes them unreliable
+  // Only full sheet name phrases from NON-keyword sheets should be checked
   if (!targetSheet) {
     for (const sheet of sheets) {
+      if (sheet === 'Financial Status') continue
+      // Only match sheets that are NOT in our keyword list
+      // (keyword-list sheets need the 2-keyword rule to distinguish from financial types)
+      if (Object.values(sheetKeywords).includes(sheet)) continue
       const sheetLower = sheet.toLowerCase()
       if (expandedQuestion.includes(sheetLower.replace(/\s+/g, '')) ||
           expandedQuestion.includes(sheetLower.split(' ')[0])) {
-        // Only match if it's a sheet that ISN'T also a financial type keyword
-        // Financial Status is the default, so mentioning "financial" doesn't count as explicit
-        if (sheet !== 'Financial Status' && !Object.values(sheetKeywords).includes(sheet)) {
-          targetSheet = sheet
-          break
-        }
+        targetSheet = sheet
+        break
       }
     }
   }
