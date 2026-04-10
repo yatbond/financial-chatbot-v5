@@ -3844,12 +3844,44 @@ function handleDetailQuery(data: FinancialRow[], project: string, question: stri
 // Handle "Detail X" or "Detail X.Y" query for Basic Query context (Issue 1 fix)
 function handleDetailBasicQuery(data: FinancialRow[], project: string, question: string): FuzzyResult | null {
   const lowerQ = question.toLowerCase().trim()
-  const detailMatch = lowerQ.match(/^detail\s+(\d+)(\.\d+)?$/)
+  const detailMatch = lowerQ.match(/^detail(?:\s+(\d+)(\.\d+)?)?$/)
   
   if (!detailMatch) return null
   
   const context = basicQueryContextCache.get(project)
   if (!context || context.children.length === 0) return null
+  
+  // Plain "detail" with no number — show all children
+  if (!detailMatch[1]) {
+    let response = `## Detail: ${context.itemName}\n\n`
+    response += `**Parent Item:** ${context.itemCode} - ${context.itemName}\n`
+    response += `**Sheet:** ${context.sheetName} | **Financial Type:** ${context.financialType}\n\n`
+    response += `| # | Item Code | Data Type | Value |\n`
+    response += `|---|-----------|-----------|-------|\n`
+    
+    let idx = 0
+    for (const child of context.children) {
+      const rows = data.filter(d => 
+        d._project === project && 
+        d.Item_Code === child.code &&
+        d.Sheet_Name === context.sheetName &&
+        d.Financial_Type === context.financialType
+      )
+      if (rows.length > 0) {
+        idx++
+        const total = rows.reduce((sum, r) => sum + (typeof r.Value === 'number' ? r.Value : parseFloat(r.Value) || 0), 0)
+        response += `| ${idx} | ${child.code} | ${child.name} | ${formatCurrency(total)} |\n`
+      }
+    }
+    
+    if (idx === 0) {
+      response += `| (no data found for sub-items) | - | - | - |\n`
+    }
+    
+    response += `\n💡 Type **"detail N"** for breakdown of a specific sub-item, or **"detail N.Y"** for 3rd tier.\n`
+    
+    return { text: response, candidates: [] }
+  }
   
   const childIndex = parseInt(detailMatch[1]) - 1
   const subIndex = detailMatch[2] ? parseInt(detailMatch[2].slice(1)) : undefined
@@ -4086,39 +4118,11 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
   const userSpecifiedMonth = parsedDate.month && parsedDate.month !== defaultMonth
   const hasUserDate = userSpecifiedYear || userSpecifiedMonth
 
-  // PRE-SCAN: Quick financial type detection for sheet resolution
-  const financialTypesList = getUniqueValues(data, project, 'Financial_Type')
-  let earlyFinType: string | undefined
-  for (const qWord of questionWords) {
-    if (STOPWORDS.has(qWord)) continue
-    for (const ft of financialTypesList) {
-      if (ft.toLowerCase().includes(qWord)) {
-        earlyFinType = ft
-        break
-      }
-    }
-    if (earlyFinType) break
-  }
-
   if (!hasUserDate) {
-    // No date specified by user → Check if financial_type was mentioned
-    // If yes, find the sheet that contains that financial_type from monthly data
-    // Otherwise default to Financial Status
-    if (earlyFinType) {
-      const monthlySheets = sheets.filter(s => s !== 'Financial Status')
-      for (const sheet of monthlySheets) {
-        const sheetHasFinType = projectData.some(d => 
-          d.Sheet_Name === sheet && d.Financial_Type === earlyFinType
-        )
-        if (sheetHasFinType) {
-          targetSheet = sheet
-          break
-        }
-      }
-    }
-    if (!targetSheet) {
-      targetSheet = 'Financial Status'
-    }
+    // No date specified by user → Default to Financial Status (cumulative data)
+    // Sheet resolution priority: Sheet_name > Financial_Type > Data_Type
+    // When no sheet is explicitly mentioned, Financial Status is the default
+    targetSheet = 'Financial Status'
   } else {
     // Date specified by user → Check if user explicitly mentioned a sheet
     // First try: check if user explicitly mentioned a sheet
