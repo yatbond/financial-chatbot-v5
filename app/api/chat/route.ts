@@ -4141,22 +4141,32 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
     'gp': 'Gross Profit',
   }
   
-  // Count distinct query words matching sheet keywords
-  let sheetKeywordMatches: Array<{ word: string; sheet: string }> = []
-  const seenWords = new Set<string>()
+  // Count occurrences of sheet keywords in the query
+  // If a keyword appears 2+ times, user is specifying sheet + financial_type separately
+  // e.g. "committed committed plant" → sheet=Committed Cost, ftype=Committed Cost
+  // e.g. "accrual accrual material" → sheet=Accrual, ftype=Accrual
+  // e.g. "committed plant" → single keyword = financial_type only, Sheet=Financial Status
+  let sheetKeywordCount: Record<string, number> = {}
   for (const qWord of questionWords) {
     const expanded = qWord.toLowerCase()
-    if (seenWords.has(expanded)) continue
-    seenWords.add(expanded)
     if (sheetKeywords[expanded]) {
-      sheetKeywordMatches.push({ word: expanded, sheet: sheetKeywords[expanded] })
+      sheetKeywordCount[expanded] = (sheetKeywordCount[expanded] || 0) + 1
     }
   }
-
-  if (sheetKeywordMatches.length >= 2) {
-    // 2+ sheet keywords = user is specifying sheet + financial_type separately
-    // e.g. "committed committed plant" → sheet=Committed Cost, ftype=Committed Cost
-    targetSheet = sheetKeywordMatches[0].sheet
+  
+  // Check if any keyword appears 2+ times → that's the sheet
+  for (const [keyword, count] of Object.entries(sheetKeywordCount)) {
+    if (count >= 2) {
+      targetSheet = sheetKeywords[keyword]
+      break
+    }
+  }
+  
+  // Also check if 2+ DIFFERENT keywords match → first one is the sheet
+  // e.g. "cashflow committed plant" → sheet=Cash Flow
+  const uniqueKeywordMatches = Object.keys(sheetKeywordCount)
+  if (!targetSheet && uniqueKeywordMatches.length >= 2) {
+    targetSheet = sheetKeywords[uniqueKeywordMatches[0]]
   }
   // If sheetKeywordMatches.length === 1 → single keyword = financial_type, NOT sheet
   // "committed plant" → Sheet=Financial Status, FinType=Committed Cost
