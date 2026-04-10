@@ -4196,7 +4196,7 @@ function answerQuestion(data: FinancialRow[], project: string, question: string,
         targetDataType = dataTypeCandidates[0].dataType
       } else if (keywordItemCode && dataTypeCandidates[0].score <= 1) {
         // Weak match + have item code → skip Data_Type, use item code only
-        targetDataType = null
+        targetDataType = undefined
       } else if (dataTypeCandidates.length > 0) {
         // Ambiguous or weak → show options to user
         targetDataType = dataTypeCandidates[0].dataType
